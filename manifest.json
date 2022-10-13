@@ -1,6 +1,6 @@
 {
-  "domain": "ote_energy_parser_czk_test",
-  "name": "OTE Energy Parser in CZK TEST",
+  "domain": "ha_cycler",
+  "name": "Home Assistant Cycler",
   "documentation": "",
   "dependencies": [],
   "codeowners": [],

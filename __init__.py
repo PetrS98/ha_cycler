@@ -1,1 +1,1 @@
-"""OTE Energy Sensors"""
+"""Cycler for Home Assistant"""

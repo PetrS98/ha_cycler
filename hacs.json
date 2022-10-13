@@ -1,5 +1,5 @@
 {
-  "name": "OTE Energy Parser in CZK TEST",
+  "name": "Home Assistant Cycler",
   "content_in_root": true,
   "render_readme": true,
   "domains": ["sensor"],
