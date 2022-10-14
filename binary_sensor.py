@@ -9,9 +9,6 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 
 
 """ Constants """
-DEVICE_CLASS = "monetary"
-COURSE_CODE = "EUR"
-
 CONF_TIME_FROM = "time_from"
 CONF_ON_TIME = "on_time"
 CONF_OFF_TIME = "off_time"
