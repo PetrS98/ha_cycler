@@ -58,7 +58,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     OnTime = config.get(CONF_ON_TIME)
     OffTime = config.get(CONF_OFF_TIME)
 
-    add_entities(CyclerSensor(TimeFrom, OnTime, OffTime), update_before_add=True)
+    add_entities([CyclerSensor(TimeFrom, OnTime, OffTime)], update_before_add=True)
 
 class CyclerSensor(BinarySensorEntity):
     _timeFrom = None
