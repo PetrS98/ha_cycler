@@ -23,8 +23,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-_LOGGER = logging.getLogger(__name__)
-
 def TimeAddition(t1, t2):
     nextTimeMs = TimeToMs(t1) + TimeToMs(t2)
 
