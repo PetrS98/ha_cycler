@@ -10,7 +10,7 @@ If you're using HACS - feel free to add https://github.com/PetrS98/ote_energy_pa
 Once you've installed the custom integration, add the following to your `configuration.yaml` file:
 
 ```yaml
-sensor:
+binary_sensor:
   - platform: ha_cycler         # Name of Addon folder
     time_from: "13:15:00"       # Start cycler time
     on_time: "00:01:00"         # On time
