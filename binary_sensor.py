@@ -43,6 +43,12 @@ def TimeToMs(t):
     tmp = tmp + (int(t.microsecond))
     return tmp
 
+def TimeToS(t):
+    tmp = (t.hour * 3600)
+    tmp = tmp + (t.minute * 60)
+    tmp = tmp + (t.second)
+    return tmp
+
 def MsToTime(timeMs):
     listTime = []
     listTime.append(math.floor(timeMs / 3600000))
@@ -84,6 +90,25 @@ class CyclerSensor(BinarySensorEntity):
 
         self._nextAction = TimeFrom
 
+        ActualTime = datetime.datetime.now().time()
+        ActualTimeInSeconds = TimeToS(ActualTime)
+        NextActionInSeconds = TimeToS(self._nextAction)
+        OnTimeInSeconds = TimeToS(self._onTime)
+        OffTimeInSeconds = TimeToS(self._offTime)
+        CycleTimeInSeconds = OnTimeInSeconds + OffTimeInSeconds
+
+        if (ActualTimeInSeconds < NextActionInSeconds):
+            FullCyclesMissing = math.ceil((86400 - NextActionInSeconds + ActualTimeInSeconds) / CycleTimeInSeconds)
+            self.compensateTimeFrom(FullCyclesMissing)
+        elif (ActualTimeInSeconds > NextActionInSeconds):
+            FullCyclesMissing = math.ceil((ActualTimeInSeconds - NextActionInSeconds) / CycleTimeInSeconds)
+            self.compensateTimeFrom(FullCyclesMissing)
+
+    def compensateTimeFrom(self, cycles):
+        for i in range(cycles):
+            self._nextAction = TimeAddition(self._nextAction, self._onTime)
+            self._nextAction = TimeAddition(self._nextAction, self._offTime)
+
     @property
     def name(self):
         return "Cycler"
@@ -103,19 +128,13 @@ class CyclerSensor(BinarySensorEntity):
     def update(self):
         try:
             ActualTime = datetime.datetime.now().time()
-            tr = False
 
-            while ActualTime.hour >= self._nextAction.hour and ActualTime.minute > self._nextAction.minute:
-                self._nextAction = TimeAddition(self._nextAction, self._onTime)
-                self._nextAction = TimeAddition(self._nextAction, self._offTime)
-                tr = True
-
-            if self._active and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute) and not tr:
+            if self._active and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute):
                 
                 self._active = False
                 self._nextAction = TimeAddition(self._nextAction, self._offTime)
                 
-            elif self._active == False and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute) and not tr:
+            elif self._active == False and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute):
                 
                 self._active = True
                 self._nextAction = TimeAddition(self._nextAction, self._onTime)
