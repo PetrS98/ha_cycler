@@ -106,18 +106,19 @@ class CyclerSensor(BinarySensorEntity):
     def update(self):
         try:
             ActualTime = datetime.datetime.now().time()
+            tr = False
 
-            if ActualTime.hour >= self._nextAction.hour and ActualTime.minute > self._nextAction.minute:
-
+            while ActualTime.hour >= self._nextAction.hour and ActualTime.minute > self._nextAction.minute:
                 self._nextAction = TimeAddition(self._nextAction, self._onTime)
                 self._nextAction = TimeAddition(self._nextAction, self._offTime)
+                tr = True
 
-            elif self._active and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute):
+            if self._active and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute) and not tr:
                 
                 self._active = False
                 self._nextAction = TimeAddition(self._nextAction, self._offTime)
                 
-            elif self._active == False and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute):
+            elif self._active == False and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute) and not tr:
                 
                 self._active = True
                 self._nextAction = TimeAddition(self._nextAction, self._onTime)
