@@ -1,5 +1,6 @@
 import logging
 import datetime
+import math
 
 import voluptuous as vol
 from homeassistant.components.sensor import PLATFORM_SCHEMA
@@ -27,9 +28,32 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 _LOGGER = logging.getLogger(__name__)
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    Sensors = []
+def TimeAddition(t1, t2):
+    return datetime.time((t1.hour + t2.hour), (t1.minute + t2.minute), (t1.second + t2.second))
 
+def TimeToMs(t):
+    tmp = (t.hour * 3600000)
+    tmp = tmp + (t.minute * 60000)
+    tmp = tmp + (t.second * 1000)
+    tmp = tmp + (int(t.microsecond))
+    return tmp
+
+def MsToTime(timeMs):
+    listTime = []
+    listTime.append(math.floor(timeMs / 3600000))
+    tmp = (timeMs % 3600000)
+    listTime.append(math.floor(tmp / 60000))
+    tmp = (tmp % 60000)
+    listTime.append(math.floor(tmp / 1000))
+    listTime.append((tmp % 1000))
+
+    return listTime
+
+def CheckTimeOverflow(TimeInMs):
+    return TimeInMs >= 86400000
+
+def setup_platform(hass, config, add_entities, discovery_info=None):
+    
     TimeFrom = config.get(CONF_TIME_FROM)
     OnTime = config.get(CONF_ON_TIME)
     OffTime = config.get(CONF_OFF_TIME)
@@ -40,22 +64,29 @@ class CyclerSensor(BinarySensorEntity):
     _timeFrom = None
     _onTime = None
     _offTime = None
+    _timeFromMs = None
+    _onTimeMs = None
+    _offTimeMs = None
 
-    _nextAction = None
+    _nextAction = datetime.time(0,0,0)
     
     def __init__(self, TimeFrom, OnTime, OffTime):
         """Initialize the sensor."""
         
-        self._init = True
+        self._init = False
         self._available = None
-        self._active = None
+        self._active = False
         self._enableOpertation = True
 
         self._timeFrom = TimeFrom
         self._onTime = OnTime
         self._offTime = OffTime
 
-        self.update()
+        self._timeFromMs = TimeToMs(self._timeFrom)
+        self._onTimeMs = TimeToMs(self._onTime)
+        self._offTimeMs = TimeToMs(self._offTime)
+
+        self._nextAction = self._timeFrom
 
     @property
     def name(self):
@@ -77,27 +108,44 @@ class CyclerSensor(BinarySensorEntity):
         try:
             ActualTime = datetime.datetime.now().time()
 
-            if self._init and (ActualTime.hour == self._timeFrom.hour and ActualTime.minute == self._timeFrom.minute):
-                
-                self._init = False
-                self._active = True
-                self._nextAction = (ActualTime + self._onTime)
+            nextTimeMs = 0
+            if self._active:
+                nextTimeMs = TimeToMs(self._nextAction) + self._offTimeMs
+            else:
+                nextTimeMs = TimeToMs(self._nextAction) + self._onTimeMs
+
+            if CheckTimeOverflow(nextTimeMs):
+                dif = nextTimeMs - 86400000
+                timeList = MsToTime(dif)
+                self._nextAction = datetime.time(timeList[0], timeList[1], timeList[2], timeList[3])
+
+            if ActualTime.hour >= self._nextAction.hour and ActualTime.minute > self._nextAction.minute:
+
+                nextTimeMs = TimeToMs(self._nextAction) + self._onTimeMs
+                nextTimeMs = TimeToMs(self._nextAction) + self._offTimeMs
+
+                if CheckTimeOverflow(nextTimeMs):
+                    dif = nextTimeMs - 86400000
+                    timeList = MsToTime(dif)
+                    self._nextAction = datetime.time(timeList[0], timeList[1], timeList[2], timeList[3])
+                else:
+                    timeList = MsToTime(nextTimeMs)
+                    self._nextAction = datetime.time(timeList[0], timeList[1], timeList[2], timeList[3])
 
             elif self._active and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute):
-                if self._enableOpertation:
-                    self._active = False
-                    self._nextAction = (ActualTime + self._offTime)
-                self._enableOpertation = False
+                
+                self._active = False
+                self._nextAction = TimeAddition(ActualTime, self._offTime)
                 
             elif self._active == False and (ActualTime.hour == self._nextAction.hour and ActualTime.minute == self._nextAction.minute):
-                if self._enableOpertation:
-                    self._active = True
-                    self._nextAction = (ActualTime + self._onTime)
-                self._enableOpertation = False
-
-            else:
-                self._enableOpertation = True
+                
+                self._active = True
+                self._nextAction = TimeAddition(ActualTime, self._onTime)
             self._available = True
         except:
             _LOGGER.exception("Error occured in cycler logic")
             self._available = False
+
+
+    
+
